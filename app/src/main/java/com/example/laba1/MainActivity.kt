@@ -15,10 +15,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,13 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import com.example.laba1.ui.theme.Laba1Theme
 
 class MainActivity : ComponentActivity() {
@@ -43,68 +38,62 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             Laba1Theme {
-                MainAppNavigation()
+                Laba1App()
             }
         }
     }
 }
 
+// 5 ЗАВДАННЯ: Enum з власними елементами навігації
+enum class AppDestinations(
+    val label: String,
+    val icon: Int,
+) {
+    HOME("Home", R.drawable.ic_home),
+    PROFILE("Profile", R.drawable.ic_account_box),
+    SETTINGS("Settings", android.R.drawable.ic_menu_preferences), // Використано системну іконку налаштувань
+}
+
+@PreviewScreenSizes
 @Composable
-fun MainAppNavigation() {
-    val navController = rememberNavController()
+fun Laba1App() {
+    var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        bottomBar = {
-            NavigationBar {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
-
-                AppDestinations.entries.forEach { destination ->
-                    NavigationBarItem(
-                        icon = { Icon(painterResource(destination.icon), contentDescription = destination.label) },
-                        label = { Text(destination.label) },
-                        selected = currentRoute == destination.route,
-                        onClick = {
-                            if (currentRoute != destination.route) {
-                                navController.navigate(destination.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            }
-                        }
-                    )
+    NavigationSuiteScaffold(
+        navigationSuiteItems = {
+            AppDestinations.entries.forEach {
+                item(
+                    icon = {
+                        Icon(
+                            painterResource(it.icon),
+                            contentDescription = it.label
+                        )
+                    },
+                    label = { Text(it.label) },
+                    selected = it == currentDestination,
+                    onClick = { currentDestination = it }
+                )
+            }
+        }
+    ) {
+        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+            // Відображаємо потрібний екран залежно від поточного вибору в меню
+            Box(modifier = Modifier.padding(innerPadding)) {
+                when (currentDestination) {
+                    AppDestinations.HOME -> HomeScreen()
+                    AppDestinations.PROFILE -> ProfileScreen()
+                    AppDestinations.SETTINGS -> SettingsScreen()
                 }
             }
         }
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = AppDestinations.HOME.route,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable(AppDestinations.HOME.route) {
-                HomeScreen()
-            }
-            composable(AppDestinations.PROFILE.route) {
-                ProfileScreen()
-            }
-            composable(AppDestinations.SETTINGS.route) {
-                SettingsScreen()
-            }
-        }
     }
 }
 
-// 1. Екран HOME
+// 1. Екран HOME (Центральне вирівнювання + rememberSaveable)
 @Composable
 fun HomeScreen() {
-    // Зберігаємо стан навіть при повороті екрана
     var clickCount by rememberSaveable { mutableStateOf(0) }
-    var displayMessage by rememberSaveable { mutableStateOf("Головний екран (Home)") }
+    var message by rememberSaveable { mutableStateOf("Головний екран (Home)") }
 
     Column(
         modifier = Modifier
@@ -113,31 +102,30 @@ fun HomeScreen() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Мітка, яка змінює свій вміст при натисканні
         Text(
-            text = displayMessage,
+            text = message,
             fontSize = 22.sp,
             modifier = Modifier.padding(bottom = 8.dp)
         )
-
         Text(
-            text = "Кількість натискань: $clickCount",
+            text = "Натискань: $clickCount",
             fontSize = 16.sp,
             modifier = Modifier.padding(bottom = 16.dp)
         )
-
         Button(onClick = {
             clickCount++
-            displayMessage = "Кнопку натиснуто разів: $clickCount"
+            message = "Текст змінено на Home!"
         }) {
-            Text("Змінити текст мітки")
+            Text("Кнопка Home")
         }
     }
 }
 
-// 2. Екран PROFILE
+// 2. Екран PROFILE (Вирівнювання внизу через Box + rememberSaveable)
 @Composable
 fun ProfileScreen() {
+    var profileStatus by rememberSaveable { mutableStateOf("Профіль користувача: Неактивний") }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -146,23 +134,27 @@ fun ProfileScreen() {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(bottom = 50.dp)
+            modifier = Modifier.padding(bottom = 40.dp)
         ) {
             Text(
-                text = "Профіль користувача",
-                fontSize = 28.sp
+                text = profileStatus,
+                fontSize = 20.sp
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            Button(onClick = { /* Дія для кнопки Profile */ }) {
-                Text("Редагувати профіль")
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = {
+                profileStatus = "Статус: Профіль оновлено!"
+            }) {
+                Text("Оновити профіль")
             }
         }
     }
 }
 
-// 3. Екран SETTINGS
+// 3. Екран SETTINGS (Вирівнювання ліворуч зверху + rememberSaveable)
 @Composable
 fun SettingsScreen() {
+    var themeText by rememberSaveable { mutableStateOf("Поточні налаштування: Стандартні") }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -171,33 +163,25 @@ fun SettingsScreen() {
         horizontalAlignment = Alignment.Start
     ) {
         Text(
-            text = "Налаштування додатку",
-            fontSize = 20.sp,
-            modifier = Modifier.padding(bottom = 8.dp)
+            text = themeText,
+            fontSize = 18.sp,
+            modifier = Modifier.padding(bottom = 12.dp)
         )
         Button(
-            onClick = { /* Дія для кнопки Settings */ },
+            onClick = {
+                themeText = "Налаштування застосовано!"
+            },
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
         ) {
-            Text("Змінити параметри")
+            Text("Зберегти параметри")
         }
     }
-}
-
-enum class AppDestinations(
-    val label: String,
-    val icon: Int,
-    val route: String
-) {
-    HOME("Home", R.drawable.ic_home, route = "home_screen"),
-    PROFILE("Profile", R.drawable.ic_account_box, route = "profile_screen"),
-    SETTINGS("Settings", android.R.drawable.ic_menu_preferences, route = "settings_screen"),
 }
 
 @Preview(showBackground = true)
 @Composable
 fun PreviewApp() {
     Laba1Theme {
-        MainAppNavigation()
+        Laba1App()
     }
 }
