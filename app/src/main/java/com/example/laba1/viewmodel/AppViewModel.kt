@@ -5,17 +5,20 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 class AppViewModel : ViewModel() {
-    // Стан для HomeScreen
-    var homeClickCount by mutableIntStateOf(0)
-        private set
-    var homeMessage by mutableStateOf("Головний екран (Home)")
-        private set
+
+    val homeClickCount : StateFlow<Int>
+        field = MutableStateFlow(0)
+
+    val homeMessage : StateFlow<String>
+        field = MutableStateFlow("Головний екран (Home)")
 
     fun onHomeButtonClick() {
-        homeClickCount++
-        homeMessage = "Текст змінено через ViewModel!"
+        homeClickCount.value++
+        homeMessage.value = "Текст змінено через ViewModel!"
     }
 
     // Стан для ProfileScreen

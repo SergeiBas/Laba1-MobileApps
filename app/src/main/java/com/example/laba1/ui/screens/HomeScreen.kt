@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -22,13 +24,15 @@ fun HomeScreen(viewModel: AppViewModel) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        val homeClickCount by viewModel.homeClickCount.collectAsState(0)
+        val homeMessage by viewModel.homeMessage.collectAsState()
         Text(
-            text = viewModel.homeMessage,
+            text = homeMessage,
             fontSize = 22.sp,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         Text(
-            text = "Натискань: ${viewModel.homeClickCount}",
+            text = "Натискань: ${homeClickCount}",
             fontSize = 16.sp,
             modifier = Modifier.padding(bottom = 16.dp)
         )
